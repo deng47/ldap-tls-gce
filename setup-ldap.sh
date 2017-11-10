@@ -111,23 +111,23 @@ firewall-cmd --add-service=ldap --permanent
 firewall-cmd --reload
 
 cat > ldapuser.ldif <<-EOF
-dn: uid=cent,ou=People,$base_DN
+dn: uid=ldapuser,ou=People,$base_DN
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: shadowAccount
-cn: Cent
+cn: Ldapuser
 sn: Linux
 userPassword: $password_hash
 loginShell: /bin/bash
 uidNumber: 1100
 gidNumber: 1100
-homeDirectory: /home/cent
+homeDirectory: /home/ldapuser
 
-dn: cn=cent,ou=Group,$base_DN
+dn: cn=ldapuser,ou=Group,$base_DN
 objectClass: posixGroup
-cn: Cent
+cn: Ldapuser
 gidNumber: 1100
-memberUid: cent
+memberUid: ldapuser
 EOF
 
 ldapadd -w $password -x -D cn=Manager,$base_DN -f ldapuser.ldif 
