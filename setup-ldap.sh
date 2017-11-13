@@ -20,6 +20,7 @@ fully_qualified_domain_name=$(grep internal /etc/hosts | grep -v metadata.google
 # check if it's running on a google cloud compute engine
 [ "$fully_qualified_domain_name" ] || error "This script should be run on a google cloud compute engine"
 
+# collect info needed for creatig a self-signed certificate
 OIFS="$IFS"
 IFS="."
 set -- $fully_qualified_domain_name
@@ -31,6 +32,7 @@ IFS="$OIFS"
 
 yum -y install openldap-servers openldap-clients net-tools httpd || error "Failed to install dependencies"
 
+# prepare the LDAP database
 cp /usr/share/openldap-servers/DB_CONFIG.example /var/lib/ldap/DB_CONFIG 
 chown ldap. /var/lib/ldap/DB_CONFIG 
 systemctl start slapd 
@@ -130,6 +132,7 @@ gidNumber: 1100
 memberUid: ldapuser
 EOF
 
+# create an account called "ldapuser" for test, using the same password
 ldapadd -w $password -x -D cn=Manager,$base_DN -f ldapuser.ldif 
 
 cd /etc/pki/tls/certs
@@ -137,6 +140,8 @@ umask 77 ; /usr/bin/openssl genrsa -aes128 -passout pass:$password 2048 > server
 openssl rsa -passin pass:$password -in server.key -out server.key
 
 umask 77 ; /usr/bin/openssl req -subj "/C=/ST=/L=/O=/CN=$fully_qualified_domain_name" -utf8 -new -key server.key -out server.csr
+
+# Generate a X509 certificate valid for 3650 days
 openssl x509 -in server.csr -out server.crt -req -signkey server.key -days 3650
 
 cp /etc/pki/tls/certs/server.key \
@@ -169,12 +174,13 @@ sed 's%SLAPD_URLS="ldapi:/// ldap:///"%SLAPD_URLS="ldapi:/// ldap:/// ldaps:///"
 
 systemctl restart slapd 
 systemctl start httpd 
+
 cp /etc/openldap/certs/server.crt /var/www/html/
 chmod 644 /var/www/html/server.crt
 
 
 
-echo "Finished!"
+echo -e "Finished!\nA test account was created:\nusername: ldapuser\npassword: $PASSWORD"
 
 echo -e "To connect to this ldap server, please run the following commands on a client:\n"
 echo -e "yum -y install openldap-clients nss-pam-ldapd net-tools\nauthconfig --disableldap --disableldapauth --disableldaptls --update\nauthconfig --enableldap --enableldapauth --ldapserver=$fully_qualified_domain_name --ldapbasedn="$base_DN" --update"
