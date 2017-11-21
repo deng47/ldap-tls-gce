@@ -1,5 +1,5 @@
 # ldap-tls-gce
-set up a ldap-tls server on google compute engine
+set up an ldap-tls server on google compute engine
 
 The Lightweight Directory Access Protocol, or LDAP, is an open, vendor-neutral, industry standard application protocol for accessing and maintaining distributed directory information services over an Internet Protocol (IP) network.
 
